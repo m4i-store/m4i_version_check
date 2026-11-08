@@ -51,6 +51,17 @@ local intervalHours = tonumber(GetConvar('m4i_update_check_interval_hours', '24'
 intervalHours = math.max(1, math.min(168, intervalHours))
 local intervalMs = math.floor(intervalHours * 60 * 60 * 1000)
 
+local function printBrandBanner()
+    print([[
+███╗   ███╗██╗  ██╗██╗    ███████╗████████╗ ██████╗ ██████╗ ███████╗
+████╗ ████║██║  ██║██║    ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝
+██╔████╔██║███████║██║    ███████╗   ██║   ██║   ██║██████╔╝█████╗
+██║╚██╔╝██║╚════██║██║    ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝
+██║ ╚═╝ ██║     ██║██║    ███████║   ██║   ██║   ██║██╔══██╗██╔══╝
+╚═╝     ╚═╝     ╚═╝╚═╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
+]])
+end
+
 local function checkVersion()
     if not enabled() then return end
     PerformHttpRequest(latestURL, function(status, body)
@@ -69,6 +80,8 @@ local function checkVersion()
             print(('^3[M4I Store]^7 [%s] Cannot compare version %s / %s.'):format(
                 productName, installedVersion, latest))
         elseif result > 0 then
+            -- Other scripts show the large banner ONLY for a confirmed newer release.
+            if productName ~= 'm4i_bridge' then printBrandBanner() end
             print(('^3[M4I Store]^1 [%s] UPDATE AVAILABLE!^7 Installed: ^3%s^7 | Latest: ^2%s^7'):format(
                 productName, installedVersion, latest))
             print(('^5[M4I Store]^7 Download: https://portal.cfx.re/assets/granted-assets?page=1&search=%s'):format(
@@ -92,14 +105,10 @@ end
 AddEventHandler('onResourceStart', function(started)
     if started ~= runtimeResource then return end
 
-    print([[
-███╗   ███╗██╗  ██╗██╗    ███████╗████████╗ ██████╗ ██████╗ ███████╗
-████╗ ████║██║  ██║██║    ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝
-██╔████╔██║███████║██║    ███████╗   ██║   ██║   ██║██████╔╝█████╗
-██║╚██╔╝██║╚════██║██║    ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝
-██║ ╚═╝ ██║     ██║██║    ███████║   ██║   ██║   ██║██╔══██╗██╔══╝
-╚═╝     ╚═╝     ╚═╝╚═╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
-]])
+    -- The bridge always shows the M4I Store banner, even with checks disabled.
+    if productName == 'm4i_bridge' then printBrandBanner() end
+
+
 
     print(('^2[M4I Store]^7 %s loaded | Version ^3%s^7'):format(
         productName, installedVersion))

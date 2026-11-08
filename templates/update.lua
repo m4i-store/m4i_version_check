@@ -92,5 +92,3 @@ AddEventHandler('onResourceStart', function(startedResource)
     -- A small randomized delay prevents many resources from hitting GitHub together.
     SetTimeout(2000 + math.random(0, 18000), scheduleCheck)
 end)
-
-[executed on device: mksroleplay (80f47371-b4be-455d-a4f0-816836d71a25)]

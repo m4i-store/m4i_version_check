@@ -10,6 +10,44 @@ Each root-level file named after a resource contains **only one version string**
 
 Keep legacy version metadata (`m4i_identity`, `m4i_interface`) intact unless those products are actively maintained.
 
+## Banner behavior (server console only)
+
+The large ASCII **M4I Store** banner is displayed:
+
+- **m4i_bridge:** at every resource start, even when update checks are disabled.
+- **All other M4I scripts:** only when a successful GitHub version check finds a newer version.
+- No banner is displayed to players, and nothing is sent to the client.
+
+## Customer config and stable product name
+
+Every supported script includes a **server-only** `config/update.lua` loaded before `update.lua`:
+
+```lua
+M4IUpdateConfig = {
+    check_update = true, -- false disables version requests for this resource
+}
+```
+
+The `fxmanifest.lua` loader uses **the existing `server_scripts { ... }` block** wherever possible:
+
+```lua
+name 'm4i_garage' -- stable product ID even if the resource folder is renamed
+
+server_scripts {
+    'config/update.lua',
+    -- existing server files remain in their original order
+    'update.lua' -- last, server only
+}
+
+escrow_ignore {
+    'config/update.lua' -- remains editable in official escrow
+}
+```
+
+`update.lua` calls `GetResourceMetadata(GetCurrentResourceName(), 'name', 0)` for its stable GitHub lookup. The current resource folder name is used only to recognize the local FiveM resource start event. A resource renamed from `m4i_garage` to something else therefore still checks the `m4i_garage` version file, provided the manifest retains `name 'm4i_garage'`.
+
+The existing `server.cfg` controls also work: `set m4i_check_updates false`, `set m4i_check_updates_m4i_garage false`, and `set m4i_update_check_interval_hours 24`. Config false takes priority. After editing config, restart only that resource in a maintenance window.
+
 ## How it works
 
 The included [server-side update.lua template](templates/update.lua) reads `GetResourceMetadata(GetCurrentResourceName(), 'version', 0)` from the local FiveM `fxmanifest.lua`, and compares it to:
@@ -26,7 +64,7 @@ Place `update.lua` at the root of the resource and add this in its `fxmanifest.l
 
 ```lua
 -- M4I Store release notifications (server-only)
-server_script 'update.lua'
+'update.lua' (inside the existing server_scripts table)
 ```
 
 ## Settings (server.cfg)

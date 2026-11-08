@@ -60,12 +60,24 @@ The checker **does not download, install, execute, or modify code**. Only versio
 
 ## Install into an M4I resource
 
-Place `update.lua` at the root of the resource and add this in its `fxmanifest.lua`:
+Place `update.lua` at the resource root, create `config/update.lua` using [the supplied template](templates/config/update.lua), and add the two entries **inside your existing `server_scripts` table** in `fxmanifest.lua`:
 
 ```lua
--- M4I Store release notifications (server-only)
-'update.lua' (inside the existing server_scripts table)
+name 'm4i_garage'
+
+server_scripts {
+    'config/update.lua', -- loaded before the updater
+    '@oxmysql/lib/MySQL.lua', -- example: retain any existing server scripts
+    'server/main.lua',
+    'update.lua' -- loaded last
+}
+
+escrow_ignore {
+    'config/update.lua' -- customer must be able to change check_update
+}
 ```
+
+If your resource has `server_script 'server/main.lua'` instead of a table, convert it to `server_scripts { ... }` and keep the previous server scripts in their original order. If your resource is assets-only, the two entries `config/update.lua` and `update.lua` are sufficient. Do **not** add a separate second `server_script 'update.lua'` line.
 
 ## Settings (server.cfg)
 

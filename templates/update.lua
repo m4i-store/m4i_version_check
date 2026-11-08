@@ -10,7 +10,16 @@ local productName = tostring(manifestName or runtimeResource)
 local installedVersion = tostring(GetResourceMetadata(runtimeResource, 'version', 0) or 'unknown')
 
 local function enabled()
-    -- Customer-editable setting: config/update.lua
+    -- Editable in the resource root config.lua. Reading the setting as data
+    -- avoids running scripts containing client-only natives on the server.
+    local content = LoadResourceFile(runtimeResource, 'config.lua')
+    if type(content) == 'string' then
+        local configBlock = content:match('M4IUpdateConfig%s*=%s*(%b{})')
+        if configBlock then
+            local check = configBlock:match('check_update%s*=%s*(%a+)')
+            if check == 'false' then return false end
+        end
+    end
     if type(M4IUpdateConfig) == 'table' and M4IUpdateConfig.check_update == false then
         return false
     end
@@ -55,9 +64,9 @@ local function printBrandBanner()
     print([[
 ███╗   ███╗██╗  ██╗██╗    ███████╗████████╗ ██████╗ ██████╗ ███████╗
 ████╗ ████║██║  ██║██║    ██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝
-██╔████╔██║███████║██║    ███████╗   ██║   ██║   ██║██████╔╝█████╗
-██║╚██╔╝██║╚════██║██║    ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝
-██║ ╚═╝ ██║     ██║██║    ███████║   ██║   ██║   ██║██╔══██╗██╔══╝
+██╔████╔██║███████║██║    ███████╗   ██║   ██║   ██║██████╔╝█████╗  
+██║╚██╔╝██║╚════██║██║    ╚════██║   ██║   ██║   ██║██╔══██╗██╔══╝  
+██║ ╚═╝ ██║     ██║██║    ███████║   ██║   ╚██████╔╝██║  ██║███████╗
 ╚═╝     ╚═╝     ╚═╝╚═╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
 ]])
 end
@@ -120,7 +129,7 @@ AddEventHandler('onResourceStart', function(started)
         return
     end
     if not enabled() then
-        print(('^3[M4I Store]^7 [%s] Update checks disabled in config/update.lua or server.cfg.'):format(
+        print(('^3[M4I Store]^7 [%s] Update checks disabled in config.lua or server.cfg.'):format(
             productName))
         return
     end

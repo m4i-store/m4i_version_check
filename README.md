@@ -20,33 +20,37 @@ The large ASCII **M4I Store** banner is displayed:
 
 ## Customer config and stable product name
 
-Every supported script includes a **server-only** `config/update.lua` loaded before `update.lua`:
+Every supported resource keeps its customer setting directly in its **root `config.lua`**, not in a separate file. Append this block to the existing `config.lua`:
 
 ```lua
 M4IUpdateConfig = {
-    check_update = true, -- false disables version requests for this resource
+    check_update = true,
 }
 ```
 
-The `fxmanifest.lua` loader uses **the existing `server_scripts { ... }` block** wherever possible:
+Set `check_update = false` to disable **all GitHub version requests** for that script. For resources without `config.lua`, create a new root `config.lua` with the same block. Do not overwrite an existing configuration.
+
+The updater reads this literal boolean through the server-side `LoadResourceFile` native. It does not execute client-only configuration code on the server and does not require `config.lua` to be added to `server_scripts`.
+
+`fxmanifest.lua` keeps `update.lua` in the **existing `server_scripts` table** (with previous server scripts in their original order):
 
 ```lua
-name 'm4i_garage' -- stable product ID even if the resource folder is renamed
+name 'm4i_garage' -- stable product ID, even when the resource directory is renamed
 
 server_scripts {
-    'config/update.lua',
-    -- existing server files remain in their original order
-    'update.lua' -- last, server only
+    '@oxmysql/lib/MySQL.lua',
+    'server/main.lua',
+    'update.lua' -- last; server only
 }
 
 escrow_ignore {
-    'config/update.lua' -- remains editable in official escrow
+    'config.lua' -- editable in Cfx.re Asset Escrow
 }
 ```
 
-`update.lua` calls `GetResourceMetadata(GetCurrentResourceName(), 'name', 0)` for its stable GitHub lookup. The current resource folder name is used only to recognize the local FiveM resource start event. A resource renamed from `m4i_garage` to something else therefore still checks the `m4i_garage` version file, provided the manifest retains `name 'm4i_garage'`.
+The updater uses `GetResourceMetadata(GetCurrentResourceName(), 'name', 0)` for stable GitHub identity and `GetCurrentResourceName()` only for resource-local reads and start events. Renaming the folder does not change the GitHub lookup.
 
-The existing `server.cfg` controls also work: `set m4i_check_updates false`, `set m4i_check_updates_m4i_garage false`, and `set m4i_update_check_interval_hours 24`. Config false takes priority. After editing config, restart only that resource in a maintenance window.
+Global `server.cfg` controls continue to work: `set m4i_check_updates false`, `set m4i_check_updates_m4i_garage false`, and `set m4i_update_check_interval_hours 24`. Either a false in `config.lua` or a disabling convar prevents the HTTP request.
 
 ## How it works
 
@@ -60,24 +64,22 @@ The checker **does not download, install, execute, or modify code**. Only versio
 
 ## Install into an M4I resource
 
-Place `update.lua` at the resource root, create `config/update.lua` using [the supplied template](templates/config/update.lua), and add the two entries **inside your existing `server_scripts` table** in `fxmanifest.lua`:
+Place `update.lua` at the root of the resource. Append `M4IUpdateConfig` to `config.lua` (or create it if missing) and add only the updater to the existing manifest:
 
 ```lua
 name 'm4i_garage'
 
 server_scripts {
-    'config/update.lua', -- loaded before the updater
-    '@oxmysql/lib/MySQL.lua', -- example: retain any existing server scripts
-    'server/main.lua',
-    'update.lua' -- loaded last
+    -- all original server scripts in their original order
+    'update.lua'
 }
 
 escrow_ignore {
-    'config/update.lua' -- customer must be able to change check_update
+    'config.lua'
 }
 ```
 
-If your resource has `server_script 'server/main.lua'` instead of a table, convert it to `server_scripts { ... }` and keep the previous server scripts in their original order. If your resource is assets-only, the two entries `config/update.lua` and `update.lua` are sufficient. Do **not** add a separate second `server_script 'update.lua'` line.
+Do not add a standalone `server_script 'update.lua'` line when a `server_scripts` table already exists. The checker reads `config.lua` itself, so no extra config loader is needed.
 
 ## Settings (server.cfg)
 
